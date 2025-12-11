@@ -1,4 +1,4 @@
-from remina import AsyncMemory, AsyncGraphMemory
+from agmem import AsyncMemory, AsyncGraphMemory
 import asyncio
 import os
 from dotenv import load_dotenv

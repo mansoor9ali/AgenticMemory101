@@ -1,0 +1,28 @@
+# All dependencies for full functionality
+
+# Core
+pydantic
+
+# LLM Providers
+openai
+anthropic
+google-genai
+
+# Embedding Providers
+sentence-transformers
+
+# L1 Cache
+redis
+
+# L2 Storage
+aiosqlite
+asyncpg
+motor
+
+# Vector Stores
+chromadb
+pinecone
+qdrant-client
+
+# Graph Store
+neo4j>=5.0.0
