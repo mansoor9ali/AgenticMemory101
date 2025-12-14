@@ -10,6 +10,7 @@ from agmem.configs.graph import GraphConfig
 from agmem.graph.extraction import extract_graph_from_content
 from agmem.graph.models import Episode, GraphSearchResult, generate_id
 from agmem.graph.neo4j_store import Neo4jGraphStore
+from agmem.graph.falkordb_store import FalkorDBGraphStore
 from agmem.graph.store import GraphStoreBase
 from agmem.utils.factory import EmbedderFactory, LLMFactory
 
@@ -69,6 +70,16 @@ class AsyncGraphMemory:
                 "password": store_config.password,
                 "database": store_config.database,
                 "max_connection_pool_size": store_config.max_connection_pool_size,
+            })
+        elif store_config.provider == "falkordb":
+            self._store = FalkorDBGraphStore({
+                "host": store_config.host,
+                "port": store_config.port,
+                "user": store_config.user,
+                "password": store_config.password,
+                "graph_name": store_config.graph_name,
+                "use_tls": store_config.use_tls,
+                "connection_timeout": store_config.connection_timeout,
             })
         else:
             raise ValueError(f"Unsupported graph store provider: {store_config.provider}")

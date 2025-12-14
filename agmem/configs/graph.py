@@ -13,15 +13,27 @@ from agmem.configs.llms import LLMConfig
 class GraphStoreConfig(BaseModel):
     """Graph database configuration."""
     
-    provider: str = Field("neo4j", description="Graph store provider: neo4j")
-    uri: str = Field("bolt://localhost:7687", description="Database URI")
-    user: str = Field("neo4j", description="Database user")
-    password: str = Field("", description="Database password")
-    database: str = Field("neo4j", description="Database name")
+    provider: str = Field(
+        "neo4j",
+        description="Graph store provider: neo4j or falkordb",
+    )
     
-    # Connection pool
-    max_connection_pool_size: int = Field(50, description="Max connections in pool")
-    connection_timeout: float = Field(30.0, description="Connection timeout in seconds")
+    # Neo4j connection settings
+    uri: str = Field("bolt://localhost:7687", description="Neo4j database URI")
+    user: str = Field("neo4j", description="Neo4j/FalkorDB username")
+    password: str = Field("", description="Database password")
+    database: str = Field("neo4j", description="Neo4j database name")
+    max_connection_pool_size: int = Field(50, description="Neo4j max connections in pool")
+    connection_timeout: float = Field(30.0, description="Neo4j connection timeout in seconds")
+    
+    # FalkorDB connection settings
+    host: str = Field("localhost", description="FalkorDB host (when provider=falkordb)")
+    port: int = Field(6379, description="FalkorDB port (when provider=falkordb)")
+    graph_name: str = Field(
+        "agentic_memory",
+        description="Graph key/name inside FalkorDB/RedisGraph",
+    )
+    use_tls: bool = Field(False, description="Use TLS when connecting to FalkorDB")
 
 
 class GraphConfig(BaseModel):

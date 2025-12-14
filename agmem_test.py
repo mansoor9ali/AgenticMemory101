@@ -54,35 +54,74 @@ async def main():
 
     # Graph memory
 
-    config2 = {
-        "graph_store": {
-            "provider": "neo4j",
-            "uri": os.getenv("NEO4J_URI"),
-            "user": os.getenv("NEO4J_USER"),
-            "password": os.getenv("NEO4J_PASSWORD"),
-        },
-        "llm": {
-            "provider": "openai",
-            "config": {
-                "model": os.getenv("LLM_MODEL"),
-                "base_url": os.getenv("LLM_BASE_URL"),
-                "api_key": os.getenv("LLM_API_KEY")
-            }
-        },
-        "embedder": {
-            "provider": "openai",
-            "config": {
-                "model": os.getenv("EMBEDDER_MODEL"),
-                "base_url": os.getenv("EMBEDDER_BASE_URL"),
-                "api_key": os.getenv("EMBEDDER_API_KEY")
-            }
-        },
-        "max_entities_per_message": 10,
-        "max_relationships_per_message": 15,
-    }
-    graph = AsyncGraphMemory(config2)
-    await graph.add("I'm John from Google and living in New york", user_id="user_123")
-    await graph.close()
+    # config2 = {
+    #     "graph_store": {
+    #         "provider": "neo4j",
+    #         "uri": os.getenv("NEO4J_URI"),
+    #         "user": os.getenv("NEO4J_USER"),
+    #         "password": os.getenv("NEO4J_PASSWORD"),
+    #     },
+    #     "llm": {
+    #         "provider": "openai",
+    #         "config": {
+    #             "model": os.getenv("LLM_MODEL"),
+    #             "base_url": os.getenv("LLM_BASE_URL"),
+    #             "api_key": os.getenv("LLM_API_KEY")
+    #         }
+    #     },
+    #     "embedder": {
+    #         "provider": "openai",
+    #         "config": {
+    #             "model": os.getenv("EMBEDDER_MODEL"),
+    #             "base_url": os.getenv("EMBEDDER_BASE_URL"),
+    #             "api_key": os.getenv("EMBEDDER_API_KEY")
+    #         }
+    #     },
+    #     "max_entities_per_message": 10,
+    #     "max_relationships_per_message": 15,
+    # }
+    # graph = AsyncGraphMemory(config2)
+    # await graph.add("I'm John from Google and living in New york", user_id="user_123")
+    # await graph.close()
+
+    # FalkorDB graph memory (optional demo)
+    run_falkor_demo = os.getenv("RUN_FALKORDB_DEMO", "false").lower() == "true"
+    if run_falkor_demo:
+        falkor_config = {
+            "graph_store": {
+                "provider": "falkordb",
+                "host": os.getenv("FALKORDB_HOST", "localhost"),
+                "port": int(os.getenv("FALKORDB_PORT", "6379")),
+                "user": os.getenv("FALKORDB_USER") or "",
+                "password": os.getenv("FALKORDB_PASSWORD") or "",
+                "graph_name": os.getenv("FALKORDB_GRAPH_NAME", "agentic_memory"),
+                "use_tls": os.getenv("FALKORDB_USE_TLS", "false").lower() == "true",
+            },
+            "llm": {
+                "provider": "openai",
+                "config": {
+                    "model": os.getenv("LLM_MODEL"),
+                    "base_url": os.getenv("LLM_BASE_URL"),
+                    "api_key": os.getenv("LLM_API_KEY")
+                }
+            },
+            "embedder": {
+                "provider": "openai",
+                "config": {
+                    "model": os.getenv("EMBEDDER_MODEL"),
+                    "base_url": os.getenv("EMBEDDER_BASE_URL"),
+                    "api_key": os.getenv("EMBEDDER_API_KEY")
+                }
+            },
+            "max_entities_per_message": 10,
+            "max_relationships_per_message": 15,
+        }
+        falkor_graph = AsyncGraphMemory(falkor_config)
+        await falkor_graph.add("I'm John from Google and living in New york", user_id="user_123")
+        await falkor_graph.close()
+    else:
+        print("Skipping FalkorDB demo (set RUN_FALKORDB_DEMO=true to enable).")
+
 
 if __name__ == '__main__':
     asyncio.run(main())
