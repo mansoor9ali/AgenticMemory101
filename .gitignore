@@ -1,9 +1,19 @@
-# Environment variables
+# ===========================================
+# AgenticMemory .gitignore
+# ===========================================
+
+# -----------------------------------------
+# Environment and Secrets
+# -----------------------------------------
 .env
 .env.local
 .env.*.local
+*.env
+!.env.example
 
+# -----------------------------------------
 # Python
+# -----------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,45 +31,180 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual environments
 venv/
 ENV/
 env/
 .venv/
+.env/
 
-# IDE
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# -----------------------------------------
+# IDEs and Editors
+# -----------------------------------------
+# JetBrains (PyCharm, IntelliJ)
 .idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VSCode
 .vscode/
+*.code-workspace
+
+# Vim
 *.swp
 *.swo
 *~
 
-# Docker volumes (local data)
-qdrant_storage/
-neo4j/
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
 
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------
+# OS Generated
+# -----------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# -----------------------------------------
+# Docker
+# -----------------------------------------
+# Docker data volumes (if stored locally)
+docker-data/
+postgres_data/
+pgadmin-data/
+neo4j-data/
+qdrant_storage/
+redis-data/
+falkordb_data/
+
+# -----------------------------------------
+# Database Files
+# -----------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+
+# -----------------------------------------
 # Logs
+# -----------------------------------------
 *.log
 logs/
+log/
 
-# OS files
-.DS_Store
-Thumbs.db
+# -----------------------------------------
+# Temporary Files
+# -----------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
 
-# Jupyter Notebook
+# -----------------------------------------
+# Jupyter Notebooks
+# -----------------------------------------
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
-# pytest
-.pytest_cache/
-.coverage
-htmlcov/
-
-# mypy
-.mypy_cache/
-
+# -----------------------------------------
+# Project Specific
+# -----------------------------------------
+# Sensitive notes
 imp.txt
-docker-compose.yml
+notes.txt
+secrets.txt
+
+# Test outputs
+test_outputs/
+output/
+
+# Model cache
+models/
+model_cache/
+.cache/
+
+# Data files (large)
+data/
+*.csv
+*.json
+!package.json
+!tsconfig.json
+*.parquet
+*.pickle
+*.pkl
+
+# Embeddings cache
+embeddings_cache/
+vector_cache/
+

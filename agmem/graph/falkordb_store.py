@@ -428,10 +428,83 @@ class FalkorDBGraphStore(GraphStoreBase):
             record: Dict[str, Any] = {}
             for idx, value in enumerate(row):
                 if idx < len(normalized_header):
-                    record[normalized_header[idx]] = value
+                    # Handle FalkorDB compact mode response format
+                    parsed_value = self._parse_compact_value(value)
+                    record[normalized_header[idx]] = parsed_value
             if record:
                 records.append(record)
         return records
+
+    def _parse_compact_value(self, value: Any) -> Any:
+        """Parse a value from FalkorDB compact mode response.
+
+        FalkorDB compact mode returns values in the format:
+        - Scalars: [type, value] where type is: 1=null, 2=string, 3=int, 4=bool, 5=double
+        - Maps/Properties: [10, [key1, [type, val1], key2, [type, val2], ...]]
+        - Arrays: [6, [...]]
+        - Nodes: [8, [...]]
+        """
+        if not isinstance(value, (list, tuple)):
+            return value
+
+        if len(value) == 0:
+            return value
+
+        # Check if this is a typed value [type_id, data]
+        if len(value) == 2 and isinstance(value[0], int):
+            type_id = value[0]
+            data = value[1]
+
+            if type_id == 1:  # NULL
+                return None
+            elif type_id == 2:  # STRING
+                return data
+            elif type_id == 3:  # INTEGER
+                return int(data) if data is not None else 0
+            elif type_id == 4:  # BOOLEAN
+                return bool(data)
+            elif type_id == 5:  # DOUBLE
+                return float(data) if data is not None else 0.0
+            elif type_id == 6:  # ARRAY
+                if isinstance(data, (list, tuple)):
+                    return [self._parse_compact_value(item) for item in data]
+                return data
+            elif type_id == 10:  # MAP (properties)
+                return self._parse_compact_map(data)
+            elif type_id == 8:  # NODE - extract properties
+                # Node format: [8, [node_id, [labels], [properties]]]
+                if isinstance(data, (list, tuple)) and len(data) >= 3:
+                    return self._parse_compact_value(data[2])
+                return {}
+
+        # Check if this looks like a nested compact value
+        if len(value) >= 1 and isinstance(value[0], (list, tuple)):
+            # Could be a node or relationship wrapper
+            return self._parse_compact_value(value[0])
+
+        # Otherwise return as-is
+        return value
+
+    def _parse_compact_map(self, data: Any) -> Dict[str, Any]:
+        """Parse a FalkorDB compact map/properties.
+
+        Format: [key1, [type, val1], key2, [type, val2], ...]
+        """
+        if not isinstance(data, (list, tuple)):
+            return {}
+
+        result: Dict[str, Any] = {}
+        i = 0
+        while i < len(data) - 1:
+            key = data[i]
+            if isinstance(key, str):
+                value = data[i + 1]
+                result[key] = self._parse_compact_value(value)
+                i += 2
+            else:
+                i += 1
+
+        return result
 
     def _normalize_header(self, header: Any) -> str:
         if isinstance(header, str):

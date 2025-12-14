@@ -24,6 +24,14 @@ except ImportError:
     GraphMemory = None
     AsyncGraphMemory = None
 
+# Multi-tenant memory
+from agmem.multi_tenant import (
+    MultiTenantMemory,
+    MultiTenantGraphMemory,
+    TenantId,
+    TenantType,
+)
+
 __all__ = [
     # Vector memory
     "Memory",
@@ -31,6 +39,11 @@ __all__ = [
     # Graph memory
     "GraphMemory",
     "AsyncGraphMemory",
+    # Multi-tenant memory
+    "MultiTenantMemory",
+    "MultiTenantGraphMemory",
+    "TenantId",
+    "TenantType",
     # Exceptions
     "AgenticMemoryError",
     "StorageError",
