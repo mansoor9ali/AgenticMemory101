@@ -33,7 +33,7 @@ def get_falkordb_config() -> dict:
             "port": int(os.getenv("FALKORDB_PORT", "6380")),
             "user": os.getenv("FALKORDB_USER", ""),
             "password": os.getenv("FALKORDB_PASSWORD", ""),
-            "graph_name": os.getenv("FALKORDB_GRAPH_NAME", "hotel_memory"),
+            "graph_name": "hotel_memory",
             "use_tls": os.getenv("FALKORDB_USE_TLS", "false").lower() == "true",
         },
         "llm": {

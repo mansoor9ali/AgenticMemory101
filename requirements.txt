@@ -26,3 +26,6 @@ qdrant-client
 
 # Graph Store
 neo4j>=5.0.0
+
+graphiti-core
+graphiti-core[falkordb]
