@@ -36,22 +36,28 @@ services:
 
   # Neo4j Graph Database
   neo4j:
-    image: neo4j:latest
+    image: neo4j:enterprise
     container_name: agmem_neo4j
     restart: always
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "7474:7474"  # Browser
+      - "7687:7687"  # Bolt
     environment:
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-strong-password}
-      NEO4J_PLUGINS: '["apoc"]'
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_PLUGINS: '["apoc","apoc-extended","graph-data-science"]'
+      NEO4J_apoc_export_file_enabled: "true"
+      NEO4J_apoc_import_file_enabled: "true"
+      NEO4J_apoc_import_file_use__neo4j__config: "true"
+      NEO4J_dbms_security_procedures_allowlist: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
       - neo4j_plugins:/plugins
+      - neo4j_import:/var/lib/neo4j/import
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
+      test: ["CMD", "curl", "-f", "http://localhost:7474"]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -119,6 +125,7 @@ volumes:
     driver: local
   neo4j_data:
     driver: local
+  neo4j_import: ./neo4j_import
   neo4j_logs:
     driver: local
   neo4j_plugins:
