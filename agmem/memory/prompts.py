@@ -145,3 +145,43 @@ Required output structure:
     ]
 }}
 """
+
+USER_PROFILING_PROMPT = """You are a user profiling system. 
+Analyze the input text and extract high-level user traits and long-term preferences.
+
+Focus on:
+- Personality traits (e.g., Analytical, Creative, Impatient)
+- Communication style (e.g., Formal, Casual, Direct)
+- Long-term goals & values
+- Technical proficiency
+
+Output JSON format:
+{
+    "traits": ["trait1", "trait2"],
+    "style": "description of style",
+    "values": ["value1", "value2"]
+}
+Return empty dict if no relevant info found.
+"""
+
+EVENT_DETECTION_PROMPT = """You are an event detection system.
+Analyze the input text to identify significant events, meetings, or milestones.
+
+Detect:
+- Meetings (with whom, topic)
+- Deadlines / Milestones
+- Life events (Moving, Job change)
+- Financial events (Earnings call, Market crash)
+
+Output JSON format:
+{
+    "events": [
+        {
+            "type": "Meeting|Deadline|Life|Social|Financial",
+            "description": "Short description",
+            "date": "YYYY-MM-DD" (if identifiable, else null)
+        }
+    ]
+}
+Return empty dict if no events found.
+"""

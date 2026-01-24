@@ -18,6 +18,11 @@ from agmem.memory.utils import (
 from agmem.models import Memory as MemoryModel
 from agmem.models import SearchResult, generate_id
 from agmem.utils.factory import EmbedderFactory, LLMFactory, StorageFactory, VectorStoreFactory
+from agmem.processing.base import BaseProcessor
+from agmem.processing.fact_extractor import FactExtractionProcessor
+from agmem.models import MemoryInput
+from agmem.scoring.base import BaseScorer
+from agmem.scoring.hybrid import HybridScorer
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +34,19 @@ class AsyncMemory:
     Provides async methods for memory operations with pluggable backends.
     """
 
-    def __init__(self, config: Optional[Union[MemoryConfig, Dict[str, Any]]] = None):
+    def __init__(
+        self, 
+        config: Optional[Union[MemoryConfig, Dict[str, Any]]] = None,
+        processors: Optional[List[BaseProcessor]] = None,
+        scorer: Optional[BaseScorer] = None
+    ):
         """
         Initialize AgenticMemory Memory.
 
         Args:
             config: MemoryConfig object or dict with configuration
+            processors: Optional list of processors. Defaults to [FactExtractionProcessor] if None.
+            scorer: Optional scorer strategy. Defaults to HybridScorer if None.
         """
         if config is None:
             config = MemoryConfig()
@@ -42,6 +54,8 @@ class AsyncMemory:
             config = MemoryConfig(**config)
 
         self.config = config
+        self._processors = processors  # Will be initialized if None later
+        self._scorer = scorer # Will be initialized if None later
         self._initialized = False
 
         # Will be initialized lazily
@@ -97,6 +111,18 @@ class AsyncMemory:
                 )
                 self._cache = None
 
+        # Setup default processors if none provided
+        if self._processors is None:
+            self._processors = [FactExtractionProcessor(self._llm)]
+            
+        # Setup default scorer if none provided
+        if self._scorer is None:
+            self._scorer = HybridScorer(
+                weight_semantic=0.5,
+                weight_importance=0.3,
+                weight_keyword=0.2
+            )
+        
         self._initialized = True
 
     async def add(
@@ -124,22 +150,56 @@ class AsyncMemory:
         if isinstance(messages, str):
             messages = [{"role": "user", "content": messages}]
 
-        # Extract facts using LLM
-        facts = await self._extract_facts(messages)
+        # Create initial MemoryInputs
+        # If it's a conversation, we might want to process the last user message
+        # or the whole conversation. For simplicity, let's treat the combined text.
+        text_content = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in messages])
+        
+        # Check for skip_processing flag in kwargs
+        skip_processing = kwargs.get("skip_processing", False)
+        
+        if skip_processing:
+             inputs = [
+                 MemoryInput(
+                     content=text_content,
+                     metadata=metadata or {},
+                     source="manual",
+                     tags=[]
+                 )
+             ]
+        else:
+            inputs = [
+                MemoryInput(
+                    content=text_content,
+                    metadata=metadata or {},
+                    source="conversation",
+                    tags=[]
+                )
+            ]
+            
+            # Run Pipeline
+            for processor in self._processors:
+                new_inputs = []
+                for current_input in inputs:
+                    processed = await processor.process(current_input)
+                    new_inputs.extend(processed)
+                inputs = new_inputs
 
-        if not facts:
+        if not inputs:
             return {"results": []}
 
         # Get existing memories for deduplication
         existing = await self._storage.query(user_id, limit=100)
 
-        # Process each fact
+        # Process final inputs
         results = []
-        for fact_data in facts[: self.config.max_facts_per_conversation]:
-            # Extract fact text and scoring parameters
-            fact_text = fact_data["text"]
-            fact_importance = fact_data.get("importance", 0.5)
-            fact_decay = fact_data.get("decay", 0.01)
+        for mem_input in inputs:
+            # Extract text and scoring
+            fact_text = mem_input.content
+            fact_importance = mem_input.importance
+            
+            # Use decay from metadata if available (legacy compat) or default
+            fact_decay = mem_input.metadata.get("decay", 0.01)
 
             # Generate embedding
             embedding = self._embedder.embed(fact_text)
@@ -149,15 +209,16 @@ class AsyncMemory:
                 logger.debug(f"Skipping duplicate fact: {fact_text[:50]}...")
                 continue
 
-            # Create memory with LLM-assigned importance and decay
+            # Create memory model
             now = datetime.utcnow()
             memory = MemoryModel(
                 id=generate_id(),
                 user_id=user_id,
                 content=fact_text,
                 embedding=embedding,
-                metadata=metadata or {},
-                source="extraction",
+                metadata=mem_input.metadata,
+                tags=mem_input.tags,
+                source=mem_input.source,
                 importance=fact_importance,
                 decay_rate=fact_decay,
                 created_at=now,
@@ -187,7 +248,6 @@ class AsyncMemory:
                     "id": memory.id,
                     "memory": memory.content,
                     "importance": memory.importance,
-                    "decay_rate": memory.decay_rate,
                     "event": "ADD",
                 }
             )
@@ -299,17 +359,13 @@ class AsyncMemory:
         scored = []
         for memory in memories:
             semantic_score = score_map.get(memory.id, 0.0)
-            importance_score = compute_importance(
-                memory,
-                now,
-                self.config.weight_recency,
-                self.config.weight_frequency,
-                self.config.weight_importance,
-            )
-            keyword_score = compute_keyword_overlap(query, memory.content)
-
-            final_score = (
-                0.5 * semantic_score + 0.3 * importance_score + 0.2 * keyword_score
+            
+            # Use Pluggable Scorer
+            final_score = self._scorer.score(
+                query=query,
+                memory=memory,
+                semantic_score=semantic_score,
+                context={"now": now}
             )
 
             scored.append((memory, final_score))
